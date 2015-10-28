@@ -2,6 +2,6 @@
   "browsers": ["firefox"],
   "coverage": {
     "dir": "coverage/",
-    "reporters": ["text", "html"]
+    "reporters": ["text", "html", "lcov"]
   }
 }
