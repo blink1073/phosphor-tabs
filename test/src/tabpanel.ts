@@ -9,327 +9,397 @@
 
 import expect = require('expect.js');
 
-// import {
-//   Message
-// } from 'phosphor-messaging';
+import {
+  BoxLayout
+} from 'phosphor-boxpanel';
 
-// import {
-//   IChangedArgs
-// } from 'phosphor-properties';
+import {
+  Message
+} from 'phosphor-messaging';
 
-// import {
-//   StackedPanel
-// } from 'phosphor-stackedpanel';
+import {
+  IChangedArgs
+} from 'phosphor-properties';
 
-// import {
-//   Widget
-// } from 'phosphor-widget';
+import {
+  StackedPanel
+} from 'phosphor-stackedpanel';
 
-// import {
-//   TabBar, TabPanel
-// } from '../../lib/index';
+import {
+  Widget
+} from 'phosphor-widget';
 
-
-// class LogWidget extends Widget {
-
-//   messages: string[] = [];
-
-//   processMessage(msg: Message): void {
-//     super.processMessage(msg);
-//     this.messages.push(msg.type);
-//   }
-// }
+import {
+  TabBar, TabPanel
+} from '../../lib/index';
 
 
-// class LogTabPanel extends TabPanel {
+class LogWidget extends Widget {
 
-//   static messages: string[] = [];
+  messages: string[] = [];
 
-//   static methods: string[] = [];
-
-//   processMessage(msg: Message): void {
-//     super.processMessage(msg);
-//     LogTabPanel.messages.push(msg.type);
-//   }
-
-//   protected onCurrentItemChanged(sender: TabBar<Widget>, args: IChangedArgs<Widget>): void {
-//     super.onCurrentItemChanged(sender, args);
-//     LogTabPanel.methods.push('onCurrentItemChanged');
-//   }
-
-//   protected onItemCloseRequested(sender: TabBar<Widget>, args: Widget): void {
-//     super.onItemCloseRequested(sender, args);
-//     LogTabPanel.methods.push('onItemCloseRequested');
-//   }
-// }
+  processMessage(msg: Message): void {
+    super.processMessage(msg);
+    this.messages.push(msg.type);
+  }
+}
 
 
-// class CustomPanel extends TabPanel {
+class LogTabPanel extends TabPanel {
 
-//   static createTabBar(): TabBar<Widget> {
-//     let bar = new TabBar<Widget>();
-//     bar.id = 'custom-tab-bar';
-//     return bar;
-//   }
+  static messages: string[] = [];
 
-//   static createStackedPanel(): StackedPanel {
-//     let stack = new StackedPanel();
-//     stack.id = 'custom-stacked-panel';
-//     return stack;
-//   }
-// }
+  processMessage(msg: Message): void {
+    super.processMessage(msg);
+    LogTabPanel.messages.push(msg.type);
+  }
+
+}
 
 
-// function createContent(title: string): Widget {
-//   let widget = new LogWidget();
-//   widget.title.text = title;
-//   return widget;
-// }
+class CustomPanel extends TabPanel {
+
+  static createTabBar(): TabBar {
+    let bar = new TabBar();
+    bar.id = 'custom-tab-bar';
+    return bar;
+  }
+
+  static createStackedPanel(): StackedPanel {
+    let stack = new StackedPanel();
+    stack.id = 'custom-stacked-panel';
+    return stack;
+  }
+}
 
 
-// function createTabPanel(): LogTabPanel {
-//   let tabPanel = new LogTabPanel();
-//   tabPanel.widgets.assign([createContent('0'), createContent('1')]);
-//   return tabPanel;
-// }
+function createContent(title: string): Widget {
+  let widget = new LogWidget();
+  widget.title.text = title;
+  return widget;
+}
+
+
+function createTabPanel(): LogTabPanel {
+  let tabPanel = new LogTabPanel();
+  tabPanel.addChild(createContent('0'));
+  tabPanel.addChild(createContent('1'));
+  return tabPanel;
+}
+
+
+function triggerMouseEvent(node: HTMLElement, eventType: string, options: any = {}) {
+  options.bubbles = true;
+  let clickEvent = new MouseEvent(eventType, options);
+  node.dispatchEvent(clickEvent);
+}
 
 
 describe('phosphor-tabs', () => {
 
-  describe('stub', () => {
+  describe('TabPanel', () => {
 
-    it('should pass', () => {
+    describe('.createTabBar()', () => {
+
+      it('should create a TabBar', () => {
+        let bar = TabPanel.createTabBar();
+        expect(bar instanceof TabBar).to.be(true);
+        expect(bar.node.classList.contains('p-TabPanel-tabBar')).to.be(true);
+        expect(bar.id).to.be('');
+      });
+
+      it('should be overridable by a subclass', () => {
+        let bar = CustomPanel.createTabBar();
+        expect(bar instanceof TabBar).to.be(true);
+        expect(bar.id).to.be('custom-tab-bar');
+      });
+
+      it('should be called to create the tab bar', () => {
+        let panel = new CustomPanel();
+        expect(panel.tabBar.id).to.be('custom-tab-bar');
+      });
+
+    });
+
+    describe('.createStackedPanel()', () => {
+
+      it('should create a StackedPanel', () => {
+        let stack = TabPanel.createStackedPanel();
+        expect(stack instanceof StackedPanel).to.be(true);
+        expect(stack.id).to.be('');
+      });
+
+      it('should be overridable by a subclass', () => {
+        let stack = CustomPanel.createStackedPanel();
+        expect(stack instanceof StackedPanel).to.be(true);
+        expect(stack.id).to.be('custom-stacked-panel');
+      });
+
+      it('should be called to create the stacked panel', () => {
+        let panel = new CustomPanel();
+        expect(panel.stackedPanel.id).to.be('custom-stacked-panel');
+      });
+
+    });
+
+    describe('#constructor()', () => {
+
+      it('should accept no arguments', () => {
+        let tabPanel = new TabPanel();
+        expect(tabPanel instanceof TabPanel).to.be(true);
+      });
+
+      it('should add the `p-TabPanel` class', () => {
+        let tabPanel = new TabPanel();
+        expect(tabPanel.hasClass('p-TabPanel')).to.be(true);
+      });
+
+      it('should add a TabBar and a StackPanel', () => {
+        let tabPanel = new TabPanel();
+        let layout = tabPanel.layout as BoxLayout;
+        expect(layout instanceof BoxLayout).to.be(true);
+        expect(layout.childAt(0) instanceof TabBar).to.be(true);
+        expect(layout.childAt(1) instanceof StackedPanel).to.be(true);
+      });
+
+    });
+
+    describe('#dispose()', () => {
+
+      it('should dispose of the resources held by the widget', () => {
+        let tabPanel = new TabPanel();
+        tabPanel.dispose();
+        expect(tabPanel.tabBar).to.be(null);
+      });
+
+    });
+
+    describe('#currentWidget', () => {
+
+      it('should get the currently selected widget', () => {
+        let tabPanel = new TabPanel();
+        let widget = new Widget();
+        tabPanel.addChild(widget);
+        expect(tabPanel.currentWidget).to.be(widget);
+      });
+
+      it('should set the currently selected widget', () => {
+        let tabPanel = new TabPanel();
+        let widget0 = new Widget();
+        let widget1 = new Widget();
+        tabPanel.addChild(widget0);
+        tabPanel.addChild(widget1);
+        expect(tabPanel.currentWidget).to.be(widget0);
+        tabPanel.currentWidget = widget1;
+        expect(tabPanel.currentWidget).to.be(widget1);
+      });
+
+      it('should be an alias to the currentItem property of the tab bar', () => {
+        let tabPanel = new TabPanel();
+        let widget0 = new Widget();
+        let widget1 = new Widget();
+        tabPanel.addChild(widget0);
+        tabPanel.addChild(widget1);
+        expect(tabPanel.currentWidget).to.be(widget0);
+        expect(tabPanel.tabBar.currentItem).to.be(widget0);
+        tabPanel.tabBar.currentItem = widget1;
+        expect(tabPanel.currentWidget).to.be(widget1);
+      });
+
+    });
+
+    describe('#tabsMovable', () => {
+
+      it('should get whether the tabs are movable by the user', () => {
+        let tabPanel = new TabPanel();
+        expect(tabPanel.tabsMovable).to.be(false);
+      });
+
+      it('should set whether the tabs are movable by the user', () => {
+        let tabPanel = new TabPanel();
+        tabPanel.tabsMovable = true;
+        expect(tabPanel.tabsMovable).to.be(true);
+      });
+
+      it('should be an alias to the tabsMovable property of the tab bar', () => {
+        let tabPanel = new TabPanel();
+        tabPanel.tabBar.tabsMovable = true;
+        expect(tabPanel.tabsMovable).to.be(true);
+        tabPanel.tabsMovable = false;
+        expect(tabPanel.tabBar.tabsMovable).to.be(false);
+      });
+
+    });
+
+    describe('#tabBar', () => {
+
+      it('should get the tab bar associated with the tab panel', () => {
+        let tabPanel = createTabPanel();
+        expect(tabPanel.tabBar instanceof TabBar).to.be(true);
+      });
+
+      it('should synchronize the items with the children of the stack panel', () => {
+        let tabPanel = createTabPanel();
+        let item = tabPanel.childAt(1);
+        expect(item.isHidden).to.be(true);
+        tabPanel.tabBar.currentItem = item;
+        expect(item.isHidden).to.be(false);
+      });
+
+      it('should be read only', () => {
+        let tabPanel = createTabPanel();
+        expect(() => { tabPanel.tabBar = null; }).to.throwError();
+      });
+
+      it('should synchronize tab moves with the stack panel', (done) => {
+        let tabPanel = createTabPanel();
+        let called = false;
+        let tabBar = tabPanel.tabBar;
+        let item = tabBar.itemAt(1) as Widget;
+        tabBar.tabsMovable = true;
+        tabPanel.attach(document.body);
+        let tab = tabBar.contentNode.children[1] as HTMLElement;
+        let left = tabBar.contentNode.getBoundingClientRect().left;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        let opts2 = { clientX: left - 200, clientY: rect.top + 1 };
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        triggerMouseEvent(tab, 'mouseup', opts2);
+        setTimeout(() => {
+          expect(tabPanel.childIndex(item)).to.be(0);
+          tabPanel.dispose();
+          done();
+        }, 200);
+      });
+
+    });
+
+    describe('#stackedPanel', () => {
+
+      it('should get the stacked panel associated with the tab panel', () => {
+        let tabPanel = createTabPanel();
+        expect(tabPanel.stackedPanel instanceof StackedPanel).to.be(true);
+      });
+
+      it('should be read only', () => {
+        let tabPanel = createTabPanel();
+        expect(() => { tabPanel.stackedPanel = null; }).to.throwError();
+      });
+
+    });
+
+    describe('#childCount()', () => {
+
+      it('should get the number of child widgets in the tab panel', () => {
+        let tabPanel = createTabPanel();
+        expect(tabPanel.childCount()).to.be(2);
+      });
+
+      it('should synchronize with the stacked panel', () => {
+        let tabPanel = createTabPanel();
+        tabPanel.currentWidget.parent = null;
+        expect(tabPanel.childCount()).to.be(1);
+      });
+
+      it('should synchronize with the tab bar', () => {
+        let tabPanel = createTabPanel();
+        tabPanel.attach(document.body);
+        let tabBar = tabPanel.tabBar;
+        let item = tabBar.itemAt(0);
+        item.title.closable = true;
+        TabBar.updateTab(tabBar.tabAt(0), item.title);
+
+        let node = TabBar.tabCloseIcon(tabBar.tabAt(0));
+        node.click();
+        expect(tabPanel.childCount()).to.be(1);
+        tabBar.dispose();
+      });
+
+    });
+
+    describe('#childAt()', () => {
+
+      it('should get the child widget at the specified index', () => {
+        let tabPanel = new TabPanel();
+        let widget = new Widget();
+        tabPanel.addChild(widget);
+        expect(tabPanel.childAt(0)).to.be(widget);
+      });
+
+      it('should return `undefined` for an invalid index', () => {
+        let tabPanel = new TabPanel();
+        expect(tabPanel.childAt(0)).to.be(void 0);
+      });
+
+    });
+
+    describe('#childIndex()', () => {
+
+      it('should get the index of the specified child widget', () => {
+        let tabPanel = new TabPanel();
+        let widget = new Widget();
+        tabPanel.addChild(widget);
+        expect(tabPanel.childIndex(widget)).to.be(0);
+      });
+
+      it('should return `-1` for an invalid widget', () => {
+        let tabPanel = new TabPanel();
+        expect(tabPanel.childIndex(new Widget())).to.be(-1);
+      });
+
+    });
+
+    describe('#addChild()', () => {
+
+      it('should add a child widget to the end of the tab panel', () => {
+        let tabPanel = new TabPanel();
+        let widgets = [new Widget(), new Widget()];
+        tabPanel.addChild(widgets[0]);
+        tabPanel.addChild(widgets[1]);
+        expect(tabPanel.childIndex(widgets[1])).to.be(1);
+      });
+
+      it('should move an existing child', () => {
+        let tabPanel = new TabPanel();
+        let widgets = [new Widget(), new Widget()];
+        tabPanel.addChild(widgets[0]);
+        tabPanel.addChild(widgets[1]);
+        tabPanel.addChild(widgets[0]);
+        expect(tabPanel.childIndex(widgets[0])).to.be(1);
+      });
+
+    });
+
+    describe('#insertChild()', () => {
+
+      it('should insert a child widget at the specified index', () => {
+        let tabPanel = createTabPanel();
+        let item = new Widget();
+        tabPanel.insertChild(1, item);
+        expect(tabPanel.childIndex(item)).to.be(1);
+      });
+
+      it('should move an existing child', () => {
+        let tabPanel = createTabPanel();
+        let item = new Widget();
+        tabPanel.addChild(item);
+        tabPanel.insertChild(0, item);
+        expect(tabPanel.childCount()).to.be(3);
+        expect(tabPanel.childIndex(item)).to.be(0);
+      });
+
+      it('should clamp the index', () => {
+        let tabPanel = createTabPanel();
+        let item = new Widget();
+        tabPanel.insertChild(-1, item);
+        expect(tabPanel.childIndex(item)).to.be(0);
+        tabPanel.insertChild(10, item);
+        expect(tabPanel.childIndex(item)).to.be(2);
+      });
 
     });
 
   });
-
-  // describe('TabPanel', () => {
-
-  //   describe('.createTabBar()', () => {
-
-  //     it('should create a TabBar', () => {
-  //       let bar = TabPanel.createTabBar();
-  //       expect(bar instanceof TabBar).to.be(true);
-  //       expect(bar.id).to.be('');
-  //     });
-
-  //     it('should be overridable by a subclass', () => {
-  //       let bar = CustomPanel.createTabBar();
-  //       expect(bar instanceof TabBar).to.be(true);
-  //       expect(bar.id).to.be('custom-tab-bar');
-  //     });
-
-  //     it('should be called to create the tab bar', () => {
-  //       let panel = new CustomPanel();
-  //       expect(panel.tabs.id).to.be('custom-tab-bar');
-  //     });
-
-  //   });
-
-  //   describe('.createStackedPanel()', () => {
-
-  //     it('should create a StackedPanel', () => {
-  //       let stack = TabPanel.createStackedPanel();
-  //       expect(stack instanceof StackedPanel).to.be(true);
-  //       expect(stack.id).to.be('');
-  //     });
-
-  //     it('should be overridable by a subclass', () => {
-  //       let stack = CustomPanel.createStackedPanel();
-  //       expect(stack instanceof StackedPanel).to.be(true);
-  //       expect(stack.id).to.be('custom-stacked-panel');
-  //     });
-
-  //     it('should be called to create the stacked panel', () => {
-  //       let panel = new CustomPanel();
-  //       expect(panel.stack.id).to.be('custom-stacked-panel');
-  //     });
-
-  //   });
-
-  //   describe('#constructor()', () => {
-
-  //     it('should accept no arguments', () => {
-  //       let tabPanel = new TabPanel();
-  //       expect(tabPanel instanceof TabPanel).to.be(true);
-  //     });
-
-  //     it('should add the `p-TabPanel` class', () => {
-  //       let tabPanel = new TabPanel();
-  //       expect(tabPanel.hasClass('p-TabPanel')).to.be(true);
-  //     });
-
-  //     it('should add a TabBar and a StackPanel', () => {
-  //       let tabPanel = new TabPanel();
-  //       expect(tabPanel.children.get(0) instanceof TabBar).to.be(true);
-  //       expect(tabPanel.children.get(1) instanceof StackedPanel).to.be(true);
-  //     });
-
-  //   });
-
-  //   describe('#dispose()', () => {
-
-  //     it('should dispose of the resources held by the widget', () => {
-  //       let tabPanel = new TabPanel();
-  //       tabPanel.widgets.add(new Widget());
-  //       tabPanel.dispose();
-  //       expect(tabPanel.tabs).to.be(null);
-  //     });
-
-  //   });
-
-  //   describe('#currentWidget', () => {
-
-  //     it('should get the currently selected widget', () => {
-  //       let tabPanel = new TabPanel();
-  //       let widget = new Widget();
-  //       tabPanel.widgets.add(widget);
-  //       expect(tabPanel.currentWidget).to.be(widget);
-  //     });
-
-  //     it('should set the currently selected widget', () => {
-  //       let tabPanel = new TabPanel();
-  //       let widget0 = new Widget();
-  //       let widget1 = new Widget();
-  //       tabPanel.widgets.assign([widget0, widget1]);
-  //       expect(tabPanel.currentWidget).to.be(widget0);
-  //       tabPanel.currentWidget = widget1;
-  //       expect(tabPanel.currentWidget).to.be(widget1);
-  //     });
-
-  //     it('should be an alias to the currentItem property of the tab bar', () => {
-  //       let tabPanel = new TabPanel();
-  //       let widget0 = new Widget();
-  //       let widget1 = new Widget();
-  //       tabPanel.widgets.assign([widget0, widget1]);
-  //       expect(tabPanel.currentWidget).to.be(widget0);
-  //       expect(tabPanel.tabs.currentItem).to.be(widget0);
-  //       tabPanel.tabs.currentItem = widget1;
-  //       expect(tabPanel.currentWidget).to.be(widget1);
-  //     });
-
-  //   });
-
-  //   describe('#tabsMovable', () => {
-
-  //     it('should get whether the tabs are movable by the user', () => {
-  //       let tabPanel = new TabPanel();
-  //       expect(tabPanel.tabsMovable).to.be(false);
-  //     });
-
-  //     it('should set whether the tabs are movable by the user', () => {
-  //       let tabPanel = new TabPanel();
-  //       tabPanel.tabsMovable = true;
-  //       expect(tabPanel.tabsMovable).to.be(true);
-  //     });
-
-  //     it('should be an alias to the tabsMovable property of the tab bar', () => {
-  //       let tabPanel = new TabPanel();
-  //       tabPanel.tabs.tabsMovable = true;
-  //       expect(tabPanel.tabsMovable).to.be(true);
-  //       tabPanel.tabsMovable = false;
-  //       expect(tabPanel.tabs.tabsMovable).to.be(false);
-  //     });
-
-  //   });
-
-  //   describe('#widgets', () => {
-
-  //     it('should get the observable list of widgets for the panel', () => {
-  //       let tabPanel = createTabPanel();
-  //       let called = false;
-  //       expect(tabPanel.widgets.length).to.be(2);
-  //       tabPanel.widgets.changed.connect(() => { called = true; });
-  //       tabPanel.widgets.move(0, 1);
-  //       expect(called).to.be(true);
-  //     });
-
-  //     it('should be read-only', () => {
-  //       let tabPanel = createTabPanel();
-  //       expect(() => { tabPanel.widgets = null; }).to.throwError();
-  //     });
-
-  //     it('should be an alias of the children property of the stacked panel', () => {
-  //       let tabPanel = createTabPanel();
-  //       expect(tabPanel.widgets.get(0)).to.be(tabPanel.stack.children.get(0));
-  //       tabPanel.stack.children.move(0, 1);
-  //       expect(tabPanel.widgets.get(0)).to.be(tabPanel.stack.children.get(0));
-  //     });
-
-  //   });
-
-  //   describe('#tabs', () => {
-
-  //     it('should get the tab bar associated with the tab panel', () => {
-  //       let tabPanel = createTabPanel();
-  //       expect(tabPanel.tabs instanceof TabBar).to.be(true);
-  //     });
-
-  //     it('should synchronize the items with the children of the stack panel', () => {
-  //       let tabPanel = createTabPanel();
-  //       let item = tabPanel.widgets.get(1);
-  //       tabPanel.tabs.currentItem = item;
-  //       expect(tabPanel.stack.currentWidget).to.be(item);
-  //     });
-
-  //     it('should be read only', () => {
-  //       let tabPanel = createTabPanel();
-  //       expect(() => { tabPanel.tabs = null; }).to.throwError();
-  //     });
-
-  //   });
-
-  //   describe('#stack', () => {
-
-  //     it('should get the stacked panel associated with the tab panel', () => {
-  //       let tabPanel = createTabPanel();
-  //       expect(tabPanel.stack instanceof StackedPanel).to.be(true);
-  //     });
-
-  //     it('should synchronize the children with the items in the tab bar', () => {
-  //       let tabPanel = createTabPanel();
-  //       let item = tabPanel.widgets.get(1);
-  //       tabPanel.tabs.currentItem = item;
-  //       expect(tabPanel.stack.currentWidget).to.be(item);
-  //     });
-
-  //     it('should be read only', () => {
-  //       let tabPanel = createTabPanel();
-  //       expect(() => { tabPanel.stack = null; }).to.throwError();
-  //     });
-
-  //   });
-
-  //   describe('#onCurrentItemChanged', () => {
-
-  //     it('should synchronize the current tab with the current widget of the stacked panel', () => {
-  //       let tabPanel = createTabPanel();
-  //       let item = tabPanel.widgets.get(1);
-  //       LogTabPanel.methods = [];
-  //       tabPanel.tabs.currentItem = item;
-  //       expect(LogTabPanel.methods.indexOf('onCurrentItemChanged')).to.not.be(-1);
-  //       expect(tabPanel.stack.currentWidget).to.be(item);
-  //     });
-
-  //   });
-
-  //   describe('#onItemCloseRequested', () => {
-
-  //     it('should close the widget if the widget is closable', () => {
-  //       let tabPanel = createTabPanel();
-  //       let called = false;
-  //       let widget = tabPanel.widgets.get(0);
-  //       widget.title.closable = true;
-  //       Widget.attach(tabPanel, document.body);
-  //       LogTabPanel.methods = [];
-  //       tabPanel.tabs.itemCloseRequested.emit(widget);
-  //       let index = LogTabPanel.methods.indexOf('onItemCloseRequested');
-  //       expect(index).to.not.be(-1);
-  //     });
-
-  //   });
-
-  // });
 
 });
