@@ -74,11 +74,22 @@ function triggerMouseEvent(node: HTMLElement, eventType: string, options: any = 
 }
 
 
+function triggerKeyEvent(node: HTMLElement, eventType: string, options: any = {}) {
+  // cannot use KeyboardEvent in Chrome because it sets keyCode = 0
+  let event = document.createEvent('Event');
+  event.initEvent(eventType, true, true);
+  for (let prop in options) {
+    (<any>event)[prop] = options[prop];
+  }
+  node.dispatchEvent(event);
+}
+
+
 function createContent(title: string): Widget {
   let widget = new Widget();
   widget.title.text = title;
-  widget.title.icon = 'dummy';
-  widget.title.className = 'dummyClass';
+  widget.title.icon = title;
+  widget.title.className = title;
   return widget;
 }
 
@@ -239,6 +250,9 @@ describe('phosphor-tabs', () => {
         });
         triggerMouseEvent(tab, 'mousedown', opts1);
         triggerMouseEvent(tab, 'mousemove', opts2);
+        // Should be ignored.
+        triggerMouseEvent(tab, 'contextmenu');
+        expect(tabBar.events.indexOf('contextmenu')).to.not.be(-1);
         triggerMouseEvent(tab, 'mouseup', opts2);
         setTimeout(() => {
           expect(called).to.be(true);
@@ -247,6 +261,28 @@ describe('phosphor-tabs', () => {
         }, 200);
       });
 
+      it('should be not be emitted when `Escape` is pressed', (done) => {
+        let called = false;
+        let tabBar = createTabBar();
+        let item = tabBar.itemAt(1);
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let tab = tabBar.contentNode.children[1] as HTMLElement;
+        let left = tabBar.contentNode.getBoundingClientRect().left;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        let opts2 = { clientX: left - 200, clientY: rect.top + 1 };
+        tabBar.tabMoved.connect(() => { called = true; });
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        triggerKeyEvent(tab, 'keydown', { keyCode: 27 });
+        triggerMouseEvent(tab, 'mouseup', opts2);
+        setTimeout(() => {
+          expect(called).to.be(false);
+          tabBar.dispose();
+          done();
+        }, 200);
+      });
     });
 
     describe('#tabCloseRequested', () => {
@@ -673,332 +709,175 @@ describe('phosphor-tabs', () => {
 
     });
 
+    describe('#tabAt()', () => {
+
+      it('should get the tab node for the item at the given index', () => {
+        let tabBar = new TabBar();
+        let widget = new Widget();
+        widget.title.className = 'foo';
+        tabBar.addItem(widget);
+        expect(tabBar.tabAt(0).classList.contains('foo')).to.be(true);
+      });
+
+      it('should returned `undefined` for an invalid index', () => {
+        let tabBar = new TabBar();
+        expect(tabBar.tabAt(0)).to.be(void 0);
+      });
+
+    });
+
+    describe('#releaseMouse()', () => {
+
+      it('should release the mouse', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        let item = tabBar.itemAt(1);
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let tab = tabBar.contentNode.children[1] as HTMLElement;
+        let left = tabBar.contentNode.getBoundingClientRect().left;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        let opts2 = { clientX: left - 200, clientY: rect.top + 1 };
+        tabBar.tabDetachRequested.connect(() => { called = true; });
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        tabBar.releaseMouse();
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        triggerMouseEvent(tab, 'keydown');
+        triggerMouseEvent(tab, 'contextmenu');
+        expect(tabBar.events.indexOf('keydown')).to.be(-1);
+        expect(tabBar.events.indexOf('contextmenu')).to.be(-1);
+        expect(called).to.be(false);
+      });
+
+      it('should restore the non-dragged tab positions', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        let item = tabBar.itemAt(1);
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let tab = tabBar.contentNode.children[1] as HTMLElement;
+        let left = tabBar.contentNode.getBoundingClientRect().left;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        let opts2 = { clientX: left - 200, clientY: rect.top + 1 };
+        tabBar.tabDetachRequested.connect(() => { called = true; });
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        tabBar.releaseMouse();
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        expect(called).to.be(false);
+        expect(tabBar.itemIndex(item)).to.be(1);
+      });
+
+    });
+
+    describe('#onAfterAttach()', () => {
+
+      it('should be invoked just after the tab bar is attached', () => {
+        let tabBar = new LogTabBar();
+        tabBar.attach(document.body);
+        expect(tabBar.methods.indexOf('onAfterAttach')).to.not.be(-1);
+        tabBar.dispose();
+      });
+
+      context('`msg` parameter', () => {
+
+        it('should have a `type` of `after-attach`', () => {
+          let tabBar = new LogTabBar();
+          tabBar.attach(document.body);
+          expect(tabBar.messages[0]).to.be('after-attach');
+          tabBar.dispose();
+        });
+
+      });
+
+      it('should add event listeners for click and mousedown', () => {
+        let tabBar = new LogTabBar();
+        let called = false;
+        tabBar.attach(document.body);
+        expect(tabBar.methods.indexOf('onAfterAttach')).to.not.be(-1);
+        expect(tabBar.messages.indexOf('after-attach')).to.not.be(-1);
+        triggerMouseEvent(tabBar.node, 'click');
+        expect(tabBar.events.indexOf('click')).to.not.be(-1);
+        triggerMouseEvent(tabBar.node, 'mousedown');
+        expect(tabBar.events.indexOf('mousedown')).to.not.be(-1);
+        tabBar.dispose();
+      });
+
+    });
+
+    describe('#onBeforeDetach()', () => {
+
+      it('should be invoked just before the tab bar is detached', () => {
+        let tabBar = new LogTabBar();
+        tabBar.attach(document.body);
+        tabBar.detach();
+        expect(tabBar.methods.indexOf('onBeforeDetach')).to.not.be(-1);
+        tabBar.dispose();
+      });
+
+      context('`msg` parameter', () => {
+
+        it('should have a `type` of `before-detach`', () => {
+          let tabBar = new LogTabBar();
+          tabBar.attach(document.body);
+          tabBar.detach();
+          expect(tabBar.messages.indexOf('before-detach')).to.not.be(-1);
+          tabBar.dispose();
+        });
+
+      });
+
+      it('should remove event listeners for click and mousedown', () => {
+        let tabBar = new LogTabBar();
+        tabBar.attach(document.body);
+        tabBar.detach();
+        expect(tabBar.methods.indexOf('onBeforeDetach')).to.not.be(-1);
+        expect(tabBar.messages.indexOf('before-detach')).to.not.be(-1);
+        triggerMouseEvent(tabBar.node, 'click');
+        expect(tabBar.events.indexOf('click')).to.be(-1);
+        triggerMouseEvent(tabBar.node, 'mousedown');
+        expect(tabBar.events.indexOf('mousedown')).to.be(-1);
+        tabBar.dispose();
+      });
+
+    });
+
+    describe('#onUpdateRequest', () => {
+
+      it('should be invoked when an update is requested', () => {
+        let tabBar = new LogTabBar();
+        sendMessage(tabBar, Widget.MsgUpdateRequest);
+        expect(tabBar.methods.indexOf('onUpdateRequest')).to.not.be(-1);
+      });
+
+      context('`msg` parameter', () => {
+
+        it('should have a `type` of `update-request`', () => {
+          let tabBar = new LogTabBar();
+          sendMessage(tabBar, Widget.MsgUpdateRequest);
+          expect(tabBar.messages.indexOf('update-request')).to.not.be(-1);
+        });
+
+      });
+
+      it('should update the style and classes of the tabs', () => {
+        let tabBar = createTabBar();
+        tabBar.attach(document.body);
+        tabBar.currentItem = tabBar.itemAt(1);
+        sendMessage(tabBar, Widget.MsgUpdateRequest);
+        expect(tabBar.methods.indexOf('onUpdateRequest')).to.not.be(-1);
+        expect(tabBar.messages.indexOf('update-request')).to.not.be(-1);
+        let node0 = tabBar.contentNode.children[0] as HTMLElement;
+        let node1 = tabBar.contentNode.children[1] as HTMLElement;
+        expect(node1.className.indexOf('p-mod-current')).to.not.be(-1);
+        expect(node0.style.zIndex).to.be('1');
+        expect(node1.style.zIndex).to.be('2');
+        tabBar.dispose();
+      });
+
+    });
+
   });
 
 });
-
-  //   describe('.itemCloseRequestedSignal', () => {
-
-  //     it('should be a signal', () => {
-  //       expect(TabBar.itemCloseRequestedSignal instanceof Signal).to.be(true);
-  //     });
-
-  //   });
-
-  //   describe('.currentItemProperty', () => {
-
-  //     it('should be a property', () => {
-  //       expect(TabBar.currentItemProperty instanceof Property).to.be(true);
-  //     });
-
-  //     it('should have the name `currentItem`', () => {
-  //       expect(TabBar.currentItemProperty.name).to.be('currentItem');
-  //     });
-
-  //     it('should have a notify signal', () => {
-  //       expect(TabBar.currentItemProperty.notify instanceof Signal).to.be(true);
-  //     });
-
-  //     it('should default to `null`', () => {
-  //       let tab = new TabBar<Widget>();
-  //       expect(TabBar.currentItemProperty.get(tab)).to.be(null);
-  //     });
-
-  //   });
-
-  //   describe('.itemsProperty', () => {
-
-  //     it('should be a property', () => {
-  //       expect(TabBar.itemsProperty instanceof Property).to.be(true);
-  //     });
-
-  //     it('should have the name `items`', () => {
-  //       expect(TabBar.itemsProperty.name).to.be('items');
-  //     });
-
-  //     it('should default to `null`', () => {
-  //       let tab = new TabBar<Widget>();
-  //       expect(TabBar.itemsProperty.get(tab)).to.be(null);
-  //     });
-
-  //   });
-
-  //   describe('.tabsMovableProperty', () => {
-
-  //     it('should be a property', () => {
-  //       expect(TabBar.tabsMovableProperty instanceof Property).to.be(true);
-  //     });
-
-  //     it('should have the name `tabsMovable`', () => {
-  //       expect(TabBar.tabsMovableProperty.name).to.be('tabsMovable');
-  //     });
-
-  //     it('should default to `false`', () => {
-  //       let tab = new TabBar<Widget>();
-  //       expect(TabBar.tabsMovableProperty.get(tab)).to.be(false);
-  //     });
-
-  //   });
-
-  //   describe('#constructor()', () => {
-
-  //     it('should accept no argumentst', () => {
-  //       let tabBar = new TabBar();
-  //       expect(tabBar instanceof TabBar).to.be(true);
-  //     });
-
-
-
-  //   });
-
-
-  //   });
-
-  //   describe('#itemCloseRequested', () => {
-
-  //     it('should be emitted when the user clicks a tab item close icon', () => {
-
-
-
-
-
-
-  //   describe('#items', () => {
-
-  //     it('should get the list of tab items for the tab bar', () => {
-  //       let tabBar = new TabBar<Widget>();
-  //       expect(tabBar.items).to.be(null);
-  //     });
-
-  //     it('should set the list of tab items for the tab bar', () => {
-  //       let tabBar = createTabBar();
-  //       expect(tabBar.items.length).to.be(2);
-  //       expect(tabBar.items.get(0).title.text).to.be('0');
-  //       expect(tabBar.items.get(1).title.text).to.be('1');
-  //     });
-
-  //     it('should be a pure delegate to the itemsProperty', () => {
-  //       let tabBar = new TabBar<Widget>();
-  //       let widget0 = createContent('0');
-  //       let widget1 = createContent('1');
-  //       let items = new ObservableList<Widget>([widget0, widget1]);
-  //       TabBar.itemsProperty.set(tabBar, items);
-  //       expectListEqual(tabBar.items, items);
-  //       items = new ObservableList<Widget>([widget1, widget0]);
-  //       tabBar.items = items;
-  //       expectListEqual(TabBar.itemsProperty.get(tabBar), items);
-  //     });
-
-  //     it('should handle an `add`', () => {
-  //       let tabBar = createTabBar();
-  //       let widget = createContent('2');
-  //       tabBar.items.add(widget);
-  //       expect(tabBar.items.length).to.be(3);
-  //       expect(tabBar.contentNode.children[2].textContent).to.be('2');
-  //     });
-
-  //     it('should handle a `move`', () => {
-  //       let tabBar = createTabBar();
-  //       tabBar.items.move(1, 0);
-  //       expect(tabBar.currentItem).to.be(tabBar.items.get(1));
-  //     });
-
-  //     it('should handle a `remove`', () => {
-  //       let tabBar = createTabBar();
-  //       let item = tabBar.items.get(1);
-  //       tabBar.items.removeAt(0);
-  //       expect(tabBar.currentItem).to.be(item);
-  //     });
-
-  //     it('should handle a `replace`', () => {
-  //       let tabBar = createTabBar();
-  //       let items = [createContent('2'), createContent('3')];
-  //       tabBar.items.replace(0, 1, items);
-  //       expect(tabBar.items.length).to.be(3);
-  //       expect(tabBar.contentNode.children[2].textContent).to.be('3');
-  //     });
-
-  //     it('should handle a `set`', () => {
-  //       let tabBar = createTabBar();
-  //       let widget = createContent('2');
-  //       tabBar.items.set(0, widget);
-  //       expect(tabBar.items.get(0)).to.be(widget);
-  //       expect(tabBar.currentItem).to.be(widget);
-  //     });
-
-  //     it('should handle title changes', () => {
-  //       let tabBar = createTabBar();
-  //       let title = tabBar.items.get(0).title;
-  //       title.text = 'foo';
-  //       expect(tabBar.items.get(0).title.text).to.be('foo');
-  //       tabBar.items.get(0).title.icon = 'bar';
-  //       expect(tabBar.items.get(0).title.icon).to.be('bar');
-  //       title.closable = false;
-  //       expect(tabBar.items.get(0).title.closable).to.be(false);
-  //       title.className = 'baz';
-  //       expect(tabBar.items.get(0).title.className).to.be('baz');
-  //     });
-
-  //   });
-
-
-
-  //   describe('#headerNode', () => {
-
-  //     it('should have a `p-TabBar-header` class', () => {
-  //       let tabBar = new TabBar<Widget>();
-  //       expect(tabBar.headerNode.className).to.be('p-TabBar-header');
-  //     });
-
-  //   });
-
-
-
-  //   describe('#footerNode', () => {
-
-  //     it('should have a `p-TabBar-footer` class', () => {
-  //       let tabBar = new TabBar<Widget>();
-  //       expect(tabBar.footerNode.className).to.be('p-TabBar-footer');
-  //     });
-
-  //   });
-
-  //   describe('#releaseMouse', () => {
-
-  //     it('should stop mouse events and restore tabs', () => {
-  //       let tabBar = new LogTabBar();
-  //       tabBar.tabsMovable = true;
-  //       let widgets = [createContent('0'), createContent('1')];
-  //       tabBar.items = new ObservableList<Widget>(widgets);
-  //       Widget.attach(tabBar, document.body);
-  //       let tab = tabBar.contentNode.children[0] as HTMLElement;
-  //       let rect = tab.getBoundingClientRect();
-  //       let opts1 = { clientY: rect.top };
-  //       let opts2 = { clientX: -200, clientY: rect.bottom };
-  //       tabBar.events = [];
-  //       triggerMouseEvent(tab, 'mousedown', opts1);
-  //       triggerMouseEvent(tab, 'mousemove', opts2);
-  //       expect(tabBar.events.indexOf('mousemove')).to.not.be(-1);
-  //       tabBar.releaseMouse();
-  //       tabBar.events = [];
-  //       triggerMouseEvent(tab, 'mousemove', opts2);
-  //       expect(tabBar.events.indexOf('mousemove')).to.be(-1);
-  //       tabBar.dispose();
-  //     });
-
-  //   });
-
-
-  //   describe('#onAfterAttach()', () => {
-
-  //     it('should be invoked just after the tab bar is attached', () => {
-  //       let tabBar = new LogTabBar();
-  //       Widget.attach(tabBar, document.body);
-  //       expect(tabBar.methods.indexOf('onAfterAttach')).to.not.be(-1);
-  //       tabBar.dispose();
-  //     });
-
-  //     context('`msg` parameter', () => {
-
-  //       it('should have a `type` of `after-attach`', () => {
-  //         let tabBar = new LogTabBar();
-  //         Widget.attach(tabBar, document.body);
-  //         expect(tabBar.messages[0]).to.be('after-attach');
-  //         tabBar.dispose();
-  //       });
-
-  //     });
-
-  //     it('should add event listeners for click and mousedown', () => {
-  //       let tabBar = new LogTabBar();
-  //       let called = false;
-  //       Widget.attach(tabBar, document.body);
-  //       expect(tabBar.methods.indexOf('onAfterAttach')).to.not.be(-1);
-  //       expect(tabBar.messages.indexOf('after-attach')).to.not.be(-1);
-  //       triggerMouseEvent(tabBar.node, 'click');
-  //       expect(tabBar.events.indexOf('click')).to.not.be(-1);
-  //       triggerMouseEvent(tabBar.node, 'mousedown');
-  //       expect(tabBar.events.indexOf('mousedown')).to.not.be(-1);
-  //       tabBar.dispose();
-  //     });
-
-  //   });
-
-  //   describe('#onBeforeDetach()', () => {
-
-  //     it('should be invoked just before the tab bar is detached', () => {
-  //       let tabBar = new LogTabBar();
-  //       Widget.attach(tabBar, document.body);
-  //       Widget.detach(tabBar);
-  //       expect(tabBar.methods.indexOf('onBeforeDetach')).to.not.be(-1);
-  //       tabBar.dispose();
-  //     });
-
-  //     context('`msg` parameter', () => {
-
-  //       it('should have a `type` of `before-detach`', () => {
-  //         let tabBar = new LogTabBar();
-  //         Widget.attach(tabBar, document.body);
-  //         tabBar.messages = [];
-  //         Widget.detach(tabBar);
-  //         expect(tabBar.messages[0]).to.be('before-detach');
-  //         tabBar.dispose();
-  //       });
-
-  //     });
-
-  //     it('should remove event listeners for click and mousedown', () => {
-  //       let tabBar = new LogTabBar();
-  //       Widget.attach(tabBar, document.body);
-  //       Widget.detach(tabBar);
-  //       expect(tabBar.methods.indexOf('onBeforeDetach')).to.not.be(-1);
-  //       expect(tabBar.messages.indexOf('before-detach')).to.not.be(-1);
-  //       triggerMouseEvent(tabBar.node, 'click');
-  //       expect(tabBar.events.indexOf('click')).to.be(-1);
-  //       triggerMouseEvent(tabBar.node, 'mousedown');
-  //       expect(tabBar.events.indexOf('mousedown')).to.be(-1);
-  //       tabBar.dispose();
-  //     });
-
-  //   });
-
-  //   describe('#onUpdateRequest', () => {
-
-  //     it('should be invoked when an update is requested', () => {
-  //       let tabBar = new LogTabBar();
-  //       sendMessage(tabBar, Widget.MsgUpdateRequest);
-  //       expect(tabBar.methods[0]).to.be('onUpdateRequest');
-  //     });
-
-  //     context('`msg` parameter', () => {
-
-  //       it('should have a `type` of `update-request`', () => {
-  //         let tabBar = new LogTabBar();
-  //         sendMessage(tabBar, Widget.MsgUpdateRequest);
-  //         expect(tabBar.messages[0]).to.be('update-request');
-  //       });
-
-  //     });
-
-  //     it('should update the style and classes of the tabs', () => {
-  //       let tabBar = createTabBar();
-  //       Widget.attach(tabBar, document.body);
-  //       tabBar.currentItem = tabBar.items.get(1);
-  //       sendMessage(tabBar, Widget.MsgUpdateRequest);
-  //       expect(tabBar.methods.indexOf('onUpdateRequest')).to.not.be(-1);
-  //       expect(tabBar.messages.indexOf('update-request')).to.not.be(-1);
-  //       let node0 = tabBar.contentNode.children[0] as HTMLElement;
-  //       let node1 = tabBar.contentNode.children[1] as HTMLElement;
-  //       expect(node0.className.indexOf('p-mod-first')).to.not.be(-1);
-  //       expect(node1.className.indexOf('p-mod-current')).to.not.be(-1);
-  //       expect(node1.className.indexOf('p-mod-last')).to.not.be(-1);
-  //       expect(node0.style.zIndex).to.be('1');
-  //       expect(node1.style.zIndex).to.be('2');
-  //       expect(node0.style.order).to.be('0');
-  //       expect(node1.style.order).to.be('1');
-  //       tabBar.dispose();
-  //     });
-
-  //   });
-
-  // });
