@@ -9,132 +9,673 @@
 
 import expect = require('expect.js');
 
-// import {
-//   Message, sendMessage
-// } from 'phosphor-messaging';
+import {
+  Message, sendMessage
+} from 'phosphor-messaging';
 
-// import {
-//   IObservableList, ObservableList
-// } from 'phosphor-observablelist';
+import {
+  Property
+} from 'phosphor-properties';
 
-// import {
-//   Property
-// } from 'phosphor-properties';
+import {
+  Signal
+} from 'phosphor-signaling';
 
-// import {
-//   Signal
-// } from 'phosphor-signaling';
+import {
+  Widget, Title
+} from 'phosphor-widget';
 
-// import {
-//   Widget
-// } from 'phosphor-widget';
+import {
+  ITabItem, TabBar
+} from '../../lib/index';
 
-// import {
-//   ITabItem, TabBar, TearOffMessage
-// } from '../../lib/index';
-
-// import './index.css';
+import './index.css';
 
 
-// class LogTabBar extends TabBar<Widget> {
+class LogTabBar extends TabBar {
 
-//   messages: string[] = [];
+  messages: string[] = [];
 
-//   events: string[] = [];
+  events: string[] = [];
 
-//   methods: string[] = [];
+  methods: string[] = [];
 
-//   processMessage(msg: Message): void {
-//     super.processMessage(msg);
-//     this.messages.push(msg.type);
-//   }
+  processMessage(msg: Message): void {
+    super.processMessage(msg);
+    this.messages.push(msg.type);
+  }
 
-//   handleEvent(event: Event): void {
-//     super.handleEvent(event);
-//     this.events.push(event.type);
-//   }
+  handleEvent(event: Event): void {
+    super.handleEvent(event);
+    this.events.push(event.type);
+  }
 
-//   protected onAfterAttach(msg: Message): void {
-//     super.onAfterAttach(msg);
-//     this.methods.push('onAfterAttach');
-//   }
+  protected onAfterAttach(msg: Message): void {
+    super.onAfterAttach(msg);
+    this.methods.push('onAfterAttach');
+  }
 
-//   protected onBeforeDetach(msg: Message): void {
-//     super.onBeforeDetach(msg);
-//     this.methods.push('onBeforeDetach');
-//   }
+  protected onBeforeDetach(msg: Message): void {
+    super.onBeforeDetach(msg);
+    this.methods.push('onBeforeDetach');
+  }
 
-//   protected onTearOffRequest(msg: TearOffMessage<Widget>): void {
-//     super.onTearOffRequest(msg);
-//     this.methods.push('onTearOffRequest');
-//   }
-
-//   protected onUpdateRequest(msg: Message): void {
-//     super.onUpdateRequest(msg);
-//     this.methods.push('onUpdateRequest');
-//   }
-// }
+  protected onUpdateRequest(msg: Message): void {
+    super.onUpdateRequest(msg);
+    this.methods.push('onUpdateRequest');
+  }
+}
 
 
-// function triggerMouseEvent(node: HTMLElement, eventType: string, options: any = {}) {
-//   options.bubbles = true;
-//   let clickEvent = new MouseEvent(eventType, options);
-//   node.dispatchEvent(clickEvent);
-// }
+function triggerMouseEvent(node: HTMLElement, eventType: string, options: any = {}) {
+  options.bubbles = true;
+  let clickEvent = new MouseEvent(eventType, options);
+  node.dispatchEvent(clickEvent);
+}
 
 
-// function createContent(title: string): Widget {
-//   let widget = new Widget();
-//   widget.title.text = title;
-//   widget.title.icon = 'dummy';
-//   widget.title.className = 'dummyClass';
-//   return widget;
-// }
+function createContent(title: string): Widget {
+  let widget = new Widget();
+  widget.title.text = title;
+  widget.title.icon = 'dummy';
+  widget.title.className = 'dummyClass';
+  return widget;
+}
 
 
-// function createTabBar(): LogTabBar {
-//   let tabBar = new LogTabBar();
-//   let widget0 = createContent('0');
-//   let widget1 = createContent('1');
-//   let items = new ObservableList<Widget>([widget0, widget1]);
-//   tabBar.items = items;
-//   tabBar.id = 'main';
-//   return tabBar;
-// }
+function createTabBar(): LogTabBar {
+  let tabBar = new LogTabBar();
+  let widget0 = createContent('0');
+  let widget1 = createContent('1');
+  tabBar.addItem(widget0);
+  tabBar.addItem(widget1);
+  tabBar.node.id = 'main';
+  return tabBar;
+}
 
 
-// function expectListEqual(list0: IObservableList<ITabItem>, list1: IObservableList<ITabItem>): void {
-//   expect(list0.length).to.be(list1.length);
-//   for (let i = 0; i < list0.length; i++) {
-//     expect(list0.get(i)).to.be(list1.get(i));
-//   }
-// }
+function expectListEqual(list0: ITabItem[], list1: ITabItem[]): void {
+  expect(list0.length).to.be(list1.length);
+  for (let i = 0; i < list0.length; i++) {
+    expect(list0[i]).to.be(list1[i]);
+  }
+}
+
+
+function getTextNode(tab: HTMLElement): HTMLElement {
+  let node = tab.getElementsByClassName('p-TabBar-tabText')[0];
+  return node as HTMLElement;
+}
+
+
+function getIconNode(tab: HTMLElement): HTMLElement {
+  let node = tab.getElementsByClassName('p-TabBar-tabIcon')[0];
+  return node as HTMLElement;
+}
 
 
 describe('phosphor-tabs', () => {
 
-  describe('stub', () => {
+  describe('Tabbar', () => {
 
-    it('should pass', () => {
+    describe('.createNode()', () => {
+
+      it('should create a DOM node for a tabbar', () => {
+        let node = TabBar.createNode();
+        let body = node.children[0] as HTMLElement;
+        expect(body.classList.contains('p-TabBar-body')).to.be(true);
+        let content = body.children[0];
+        expect(content.classList.contains('p-TabBar-content')).to.be(true);
+      });
+
+    });
+
+    describe('.createTab()', () => {
+
+      it('should create and initialize a tabe node for a tab bar', () => {
+        let title = new Title();
+        title.text = 'foo';
+        let tab = TabBar.createTab(title);
+        expect(tab.classList.contains('p-TabBar-tab')).to.be(true);
+        // Make sure we can retrieve these items.
+        let text = getTextNode(tab);
+        let icon = getIconNode(tab);
+        let closeIcon = TabBar.tabCloseIcon(tab);
+        expect(text.textContent).to.be('foo');
+      });
+
+    });
+
+    describe('.updateTab()', () => {
+
+      it('should update a tab node to reflect the current state of a title', ()  => {
+        let title = new Title();
+        let tab = TabBar.createTab(title);
+        let icon = getIconNode(tab);
+        let text = getTextNode(tab)
+        expect(tab.classList.contains('p-mod-closable')).to.be(false);
+        expect(text.textContent).to.be('');
+        title.text = 'foo';
+        title.className = 'bar'
+        title.icon = 'baz';
+        title.closable = true;
+        TabBar.updateTab(tab, title);
+        expect(tab.classList.contains('bar')).to.be(true);
+        expect(tab.classList.contains('p-mod-closable')).to.be(true);
+        expect(icon.classList.contains('baz')).to.be(true);
+        expect(text.textContent).to.be('foo');
+      });
+
+    });
+
+    describe('.tabCloseIcon()', () => {
+
+      it('should get the close icon node for a given tab node', () => {
+        let tab = TabBar.createTab(new Title());
+        let closeIcon = TabBar.tabCloseIcon(tab);
+        expect(closeIcon.classList.contains('p-TabBar-tabCloseIcon')).to.be(true);
+      });
+
+    });
+
+    describe('#constructor()', () => {
+
+      it('should take no arguments', () => {
+        let tabBar = new TabBar();
+        expect(tabBar instanceof TabBar).to.be(true);
+      });
+
+      it('should add the `p-TabBar` class', () => {
+        let tabBar = new TabBar();
+        expect(tabBar.hasClass('p-TabBar')).to.be(true);
+      });
+
+    });
+
+
+    describe('#dispose()', () => {
+
+      it('should dispose of the resources held by the widget', () => {
+        let tabBar = createTabBar();
+        tabBar.dispose();
+        expect(tabBar.currentItem).to.be(null);
+      });
+
+    });
+
+    describe('#currentChanged', () => {
+
+      it('should be emitted when the curent tab item is changed', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        tabBar.currentChanged.connect((tabBar, args) => {
+          expect(args.index).to.be(1);
+          expect(args.item).to.be(tabBar.itemAt(1));
+          called = true;
+        });
+        tabBar.currentItem = tabBar.itemAt(1);
+      });
+
+    });
+
+    describe('#tabMoved', () => {
+
+      it('should be emitted when a tab is moved by the user', (done) => {
+        let called = false;
+        let tabBar = createTabBar();
+        let item = tabBar.itemAt(1);
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let tab = tabBar.contentNode.children[1] as HTMLElement;
+        let left = tabBar.contentNode.getBoundingClientRect().left;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        let opts2 = { clientX: left - 200, clientY: rect.top + 1 };
+        tabBar.tabMoved.connect((tabBar, args) => {
+          expect(args.fromIndex).to.be(1);
+          expect(args.toIndex).to.be(0);
+          expect(args.item).to.be(item);
+          called = true;
+        });
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        triggerMouseEvent(tab, 'mouseup', opts2);
+        setTimeout(() => {
+          expect(called).to.be(true);
+          tabBar.dispose();
+          done();
+        }, 200);
+      });
+
+    });
+
+    describe('#tabCloseRequested', () => {
+
+      it("should be emitted when the user clicks a tab's close icon", () => {
+        let called = false;
+        let tabBar = createTabBar();
+        tabBar.attach(document.body);
+        let item = tabBar.itemAt(0);
+        item.title.closable = true;
+        TabBar.updateTab(tabBar.tabAt(0), item.title);
+
+        tabBar.tabCloseRequested.connect((tabBar, args) => {
+          expect(args.index).to.be(0);
+          expect(args.item).to.be(item);
+          called = true;
+        });
+
+        let node = TabBar.tabCloseIcon(tabBar.tabAt(0));
+        node.textContent = "X";
+        let rect = node.getBoundingClientRect();
+        let args = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        triggerMouseEvent(node, 'click', args);
+        expect(called).to.be(true);
+        tabBar.dispose();
+      });
+
+      it('should be not emitted if it is not the left button', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        tabBar.tabCloseRequested.connect(() => { called = true; });
+        tabBar.attach(document.body);
+        let item = tabBar.itemAt(0);
+        item.title.closable = true;
+        TabBar.updateTab(tabBar.tabAt(0), item.title);
+        let node = TabBar.tabCloseIcon(tabBar.tabAt(0));
+        node.textContent = "X";
+        let rect = node.getBoundingClientRect();
+        let args = {
+          clientX: rect.left + 1,
+          clientY: rect.top + 1,
+          button: 1
+        };
+        triggerMouseEvent(node, 'click', args);
+        expect(called).to.be(false);
+        tabBar.dispose();
+      });
+
+      it('should be not emitted if the click is not on the close node', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        tabBar.tabCloseRequested.connect(() => { called = true; });
+        tabBar.attach(document.body);
+        let item = tabBar.itemAt(0);
+        item.title.closable = true;
+        let tab = tabBar.tabAt(0);
+        TabBar.updateTab(tab, item.title);
+        let node = tab.getElementsByClassName('p-TabBar-tabIcon')[0];
+        (node as HTMLElement).click();
+        expect(called).to.be(false);
+        tabBar.dispose();
+      });
+
+    });
+
+    describe('#tabDetachRequested', () => {
+
+      it('should be called when a tab is detached leftward', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        let item = tabBar.itemAt(1);
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let tab = tabBar.contentNode.children[1] as HTMLElement;
+        let left = tabBar.contentNode.getBoundingClientRect().left;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        let opts2 = { clientX: left - 200, clientY: rect.top + 1 };
+        tabBar.tabDetachRequested.connect((tabBar, args) => {
+          expect(args.index).to.be(1);
+          expect(args.item).to.be(item);
+          expect(args.clientX).to.be(left - 200);
+          expect(args.clientY).to.be(rect.top + 1);
+          called = true;
+        });
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        expect(called).to.be(true);
+      });
+
+      it('should be called when a tab is detached downward', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let tab = tabBar.contentNode.children[0] as HTMLElement;
+        let top = tabBar.contentNode.getBoundingClientRect().top;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        let opts2 = { clientX: rect.left + 1, clientY: top - 200 };
+        tabBar.tabDetachRequested.connect(() => { called = true; });
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        expect(called).to.be(true);
+        tabBar.dispose();
+      });
+
+      it('should be called when a tab is torn off upward', () => {
+        let called = true;
+        let tabBar = createTabBar();
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let tab = tabBar.contentNode.children[0] as HTMLElement;
+        let bottom = tabBar.contentNode.getBoundingClientRect().bottom;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        let opts2 = { clientX: rect.left + 1, clientY: bottom + 200 };
+        tabBar.tabDetachRequested.connect(() => { called = true; });
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        expect(called).to.be(true);
+        tabBar.dispose();
+      });
+
+      it('should be called when a tab is torn off rightward', () => {
+        let called = true;
+        let tabBar = createTabBar();
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let tab = tabBar.contentNode.children[0] as HTMLElement;
+        let right = tabBar.contentNode.getBoundingClientRect().right;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        let opts2 = { clientX: right + 200, clientY: rect.top + 1 };
+        tabBar.tabDetachRequested.connect(() => { called = true; });
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        expect(called).to.be(true);
+        tabBar.dispose();
+      });
+
+      it('should not be called when a tab is not moved far enough', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let tab = tabBar.contentNode.children[0] as HTMLElement;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        let opts2 = { clientX: rect.left, clientY: rect.top + 1 };
+        tabBar.tabDetachRequested.connect(() => { called = true; });
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        // next event should be ignored
+        triggerMouseEvent(tab, 'mousedown', opts2);
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        expect(called).to.be(false);
+        triggerMouseEvent(tab, 'mouseup', opts2);
+        tabBar.dispose();
+      });
+
+      it('should not be called when the left button is not used', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let tab = tabBar.contentNode.children[0] as HTMLElement;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = {
+          clientX: rect.left + 1,
+          clientY: rect.top + 1,
+          button: 1
+        };
+        let opts2 = {
+          clientX: -200,
+          clientY: rect.top + 1,
+          button: 1
+        };
+        tabBar.tabDetachRequested.connect(() => { called = true; });
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        expect(called).to.be(false);
+        triggerMouseEvent(tab, 'mouseup', opts2);
+        tabBar.dispose();
+      });
+
+      it('should not be called when tab is not selected', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let tab = tabBar.contentNode.children[0] as HTMLElement;
+        let rect = tab.getBoundingClientRect();
+        let opts1 = { clientX: -10 };
+        let opts2 = { clientX: -200, clientY: rect.bottom };
+        tabBar.tabDetachRequested.connect(() => { called = true; });
+        triggerMouseEvent(tab, 'mousedown', opts1);
+        triggerMouseEvent(tab, 'mousemove', opts2);
+        expect(called).to.be(false);
+        triggerMouseEvent(tab, 'mouseup', opts2);
+        tabBar.dispose();
+      });
+
+      it('should not be called when a close node is selected', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        tabBar.tabsMovable = true;
+        tabBar.attach(document.body);
+        let node = TabBar.tabCloseIcon(tabBar.tabAt(0));
+        node.textContent = "X";
+        let rect = node.getBoundingClientRect();
+        let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
+        let opts2 = { clientX: -200, clientY: rect.top + 1 };
+        tabBar.tabDetachRequested.connect(() => { called = true; });
+        triggerMouseEvent(node, 'mousedown', opts1);
+        triggerMouseEvent(node, 'mousemove', opts2);
+        expect(called).to.be(false);
+        triggerMouseEvent(node, 'mouseup', opts2);
+        tabBar.dispose();
+      });
+
+    });
+
+    describe('#currentItem', () => {
+
+      it('should get the currently selected tab item', () => {
+        let tabBar = createTabBar();
+        expect(tabBar.currentItem).to.be(tabBar.itemAt(0));
+      });
+
+      it('should set the currently selected tab item', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        tabBar.currentChanged.connect(() => { called = true; });
+        tabBar.currentItem = tabBar.itemAt(1);
+        expect(tabBar.currentItem).to.be(tabBar.itemAt(1));
+        expect(called).to.be(true);
+      });
+
+      it('should bail if the item is the current item', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        tabBar.currentChanged.connect(() => { called = true; });
+        tabBar.currentItem = tabBar.itemAt(0);
+        expect(tabBar.currentItem).to.be(tabBar.itemAt(0));
+        expect(called).to.be(false);
+      });
+
+      it('should bail if the tab item is not contained in the bar', () => {
+        let called = false;
+        let tabBar = createTabBar();
+        let item = new Widget();
+        tabBar.currentChanged.connect(() => { called = true; });
+        tabBar.currentItem = item;
+        expect(tabBar.currentItem).to.be(tabBar.itemAt(0));
+        expect(called).to.be(false);
+      });
+    });
+
+    describe('#tabsMovable', () => {
+
+      it('should get whether the tabs are movable by the user', () => {
+        let tabBar = new TabBar();
+        expect(tabBar.tabsMovable).to.be(false);
+      });
+
+      it('should set whether the tabs are movable by the user', () => {
+        let tabBar = new TabBar();
+        tabBar.tabsMovable = true;
+        expect(tabBar.tabsMovable).to.be(true);
+      });
+
+    });
+
+    describe('#bodyNode', () => {
+
+      it('should have a `p-TabBar-body` class', () => {
+        let tabBar = new TabBar();
+        expect(tabBar.bodyNode.className).to.be('p-TabBar-body');
+      });
+
+    });
+
+    describe('#contentNode', () => {
+
+      it('should have a `p-TabBar-content` class', () => {
+        let tabBar = new TabBar();
+        expect(tabBar.contentNode.className).to.be('p-TabBar-content');
+      });
+
+    });
+
+    describe('#itemCount()', () => {
+
+      it('should get the number of tab items in the tab bar', () => {
+        let tabBar = new TabBar();
+        expect(tabBar.itemCount()).to.be(0);
+        tabBar.addItem(new Widget());
+        expect(tabBar.itemCount()).to.be(1);
+      });
+
+    });
+
+    describe('#itemAt()', () => {
+
+      it('should get the tab item at the specified index', () => {
+        let tabBar = createTabBar();
+        expect(tabBar.itemAt(0) instanceof Widget).to.be(true);
+      });
+
+      it('should return `undefined` for an invalid index', () => {
+        let tabBar = createTabBar();
+        expect(tabBar.itemAt(10)).to.be(void 0);
+      });
+
+    });
+
+    describe('#itemIndex()', () => {
+
+      it('should get the index of the specified tab item', () => {
+        let tabBar = new TabBar();
+        let item = new Widget();
+        tabBar.addItem(item);
+        expect(tabBar.itemIndex(item)).to.be(0);
+      });
+
+      it('should return `-1` if the item is not in the tab bar', () => {
+        let tabBar = new TabBar();
+        expect(tabBar.itemIndex(new Widget())).to.be(-1);
+      });
+
+    });
+
+    describe('#addItem()', () => {
+
+      it('should add a tab item to the end of the tab bar', () => {
+        let tabBar = new TabBar();
+        let items = [new Widget(), new Widget()];
+        tabBar.addItem(items[0]);
+        tabBar.addItem(items[1]);
+        expect(tabBar.itemIndex(items[0])).to.be(0);
+        expect(tabBar.itemIndex(items[1])).to.be(1);
+      });
+
+      it('should move an existing item to the end', () => {
+        let tabBar = new TabBar();
+        let items = [new Widget(), new Widget()];
+        tabBar.addItem(items[0]);
+        tabBar.addItem(items[1]);
+        tabBar.addItem(items[0]);
+        expect(tabBar.itemIndex(items[0])).to.be(1);
+        expect(tabBar.itemIndex(items[1])).to.be(0);
+      });
+
+    });
+
+    describe('#insertItem()', () => {
+
+      it('should insert a tab item at the specified index', () => {
+        let tabBar = createTabBar();
+        let item = new Widget();
+        tabBar.insertItem(1, item);
+        expect(tabBar.itemIndex(item)).to.be(1);
+      });
+
+      it('should move an existing item', () => {
+        let tabBar = createTabBar();
+        let item = new Widget();
+        tabBar.addItem(item);
+        tabBar.insertItem(0, item);
+        expect(tabBar.itemCount()).to.be(3);
+        expect(tabBar.itemIndex(item)).to.be(0);
+      });
+
+      it('should clamp the index', () => {
+        let tabBar = createTabBar();
+        let item = new Widget();
+        tabBar.insertItem(-1, item);
+        expect(tabBar.itemIndex(item)).to.be(0);
+        tabBar.insertItem(10, item);
+        expect(tabBar.itemIndex(item)).to.be(2);
+      });
+
+      it('should issue an update request', (done) => {
+        let tabBar = createTabBar();
+        tabBar.insertItem(0, new Widget());
+        requestAnimationFrame(() => {
+          expect(tabBar.messages.indexOf('update-request')).to.not.be(-1);
+          done();
+        });
+      });
+
+    });
+
+    describe('#removeItem', () => {
+
+      it('should remove an item from the tab bar', () => {
+        let tabBar = new TabBar();
+        let item = new Widget();
+        tabBar.addItem(item);
+        tabBar.removeItem(item);
+        expect(tabBar.itemIndex(item)).to.be(-1);
+      });
+
+      it('should be a no-op if the item is not in the tab bar', () => {
+        let tabBar = new TabBar();
+        let item = new Widget();
+        tabBar.removeItem(item);
+      });
+
+      it('should issue an update request', (done) => {
+        let tabBar = createTabBar();
+        let item = new Widget()
+        tabBar.insertItem(0, item);
+        requestAnimationFrame(() => {
+          expect(tabBar.messages.indexOf('update-request')).to.not.be(-1);
+          tabBar.messages = [];
+          tabBar.removeItem(item);
+          requestAnimationFrame(() => {
+            expect(tabBar.messages.indexOf('update-request')).to.not.be(-1);
+            done();
+          });
+        });
+      });
 
     });
 
   });
 
-  // describe('Tabbar', () => {
-
-  //   describe('.createNode()', () => {
-
-  //     it('should create a DOM node for a tabbar', () => {
-  //       let node = TabBar.createNode();
-  //       let children = node.children;
-  //       expect(children.length).to.be(3);
-  //       expect(children[0].classList.contains('p-TabBar-header')).to.be(true);
-  //       expect(children[1].classList.contains('p-TabBar-body')).to.be(true);
-  //       expect(children[2].classList.contains('p-TabBar-footer')).to.be(true);
-  //     });
-
-  //   });
+});
 
   //   describe('.itemCloseRequestedSignal', () => {
 
@@ -206,115 +747,21 @@ describe('phosphor-tabs', () => {
   //       expect(tabBar instanceof TabBar).to.be(true);
   //     });
 
-  //     it('should add the `p-TabBar` class', () => {
-  //       let tabBar = new TabBar();
-  //       expect(tabBar.hasClass('p-TabBar')).to.be(true);
-  //     });
+
 
   //   });
 
-  //   describe('#dispose()', () => {
-
-  //     it('should dispose of the resources held by the widget', () => {
-  //       let tabBar = createTabBar();
-  //       tabBar.dispose();
-  //       expect(tabBar.items).to.be(null);
-  //     });
 
   //   });
 
   //   describe('#itemCloseRequested', () => {
 
   //     it('should be emitted when the user clicks a tab item close icon', () => {
-  //       let called = false;
-  //       let tabBar = createTabBar();
-  //       tabBar.itemCloseRequested.connect(() => { called = true; });
-  //       Widget.attach(tabBar, document.body);
-  //       let nodes = tabBar.node.querySelectorAll('.p-Tab-close');
-  //       let node = nodes[0] as HTMLElement;
-  //       node.textContent = "X";
-  //       let rect = node.getBoundingClientRect();
-  //       let args = { clientX: rect.left + 1, clientY: rect.top + 1 };
-  //       triggerMouseEvent(node, 'click', args);
-  //       expect(called).to.be(true);
-  //       tabBar.dispose();
-  //     });
 
-  //     it('should be not emitted if it is not the left button', () => {
-  //       let called = false;
-  //       let tabBar = createTabBar();
-  //       tabBar.itemCloseRequested.connect(() => { called = true; });
-  //       Widget.attach(tabBar, document.body);
-  //       let nodes = tabBar.node.querySelectorAll('.p-Tab-close');
-  //       let node = nodes[0] as HTMLElement;
-  //       node.textContent = "X";
-  //       let rect = node.getBoundingClientRect();
-  //       let args = {
-  //         clientX: rect.left + 1,
-  //         clientY: rect.top + 1,
-  //         button: 1
-  //       };
-  //       triggerMouseEvent(node, 'click', args);
-  //       expect(called).to.be(false);
-  //       tabBar.dispose();
-  //     });
 
-  //     it('should be not emitted if the click is not on the close node', () => {
-  //       let called = false;
-  //       let tabBar = createTabBar();
-  //       tabBar.itemCloseRequested.connect(() => { called = true; });
-  //       Widget.attach(tabBar, document.body);
-  //       let nodes = tabBar.node.querySelectorAll('.p-Tab-text');
-  //       let node = nodes[0] as HTMLElement;
-  //       node.textContent = "X";
-  //       let rect = node.getBoundingClientRect();
-  //       let args = { clientX: rect.left + 1, clientY: rect.top + 1 };
-  //       triggerMouseEvent(node, 'click', args);
-  //       expect(called).to.be(false);
-  //       tabBar.dispose();
-  //     });
 
-  //   });
 
-  //   describe('#currentItem', () => {
 
-  //     it('should get the currently selected tab item', () => {
-  //       let tabBar = createTabBar();
-  //       expect(tabBar.currentItem).to.be(tabBar.items.get(0));
-  //     });
-
-  //     it('should set the currently selected tab item', () => {
-  //       let tabBar = createTabBar();
-  //       tabBar.currentItem = tabBar.items.get(1);
-  //       expect(tabBar.currentItem).to.be(tabBar.items.get(1));
-  //     });
-
-  //     it('should be a pure delegate to the currentItemProperty', () => {
-  //       let tabBar = createTabBar();
-  //       TabBar.currentItemProperty.set(tabBar, tabBar.items.get(1));
-  //       expect(tabBar.currentItem).to.be(tabBar.items.get(1));
-  //       tabBar.currentItem = tabBar.items.get(0);
-  //       let item = TabBar.currentItemProperty.get(tabBar);
-  //       expect(item).to.be(tabBar.items.get(0));
-  //     });
-
-  //   });
-
-  //   describe('#currentItemChanged', () => {
-
-  //     it('should be emitted when the curent tab item is changed', () => {
-  //       let called = false;
-  //       let tabBar = createTabBar();
-  //       tabBar.currentItemChanged.connect((tabBar, args) => {
-  //         expect(args.name).to.be('currentItem');
-  //         expect(args.oldValue).to.be(tabBar.items.get(0));
-  //         expect(args.newValue).to.be(tabBar.items.get(1));
-  //         called = true;
-  //       });
-  //       tabBar.currentItem = tabBar.items.get(1);
-  //     });
-
-  //   });
 
   //   describe('#items', () => {
 
@@ -394,28 +841,7 @@ describe('phosphor-tabs', () => {
 
   //   });
 
-  //   describe('#tabsMovable', () => {
 
-  //     it('should get whether the tabs are movable by the user', () => {
-  //       let tabBar = new TabBar<Widget>();
-  //       expect(tabBar.tabsMovable).to.be(false);
-  //     });
-
-  //     it('should set whether the tabs are movable by the user', () => {
-  //       let tabBar = new TabBar<Widget>();
-  //       tabBar.tabsMovable = true;
-  //       expect(tabBar.tabsMovable).to.be(true);
-  //     });
-
-  //     it('should be a pure delegate to the tabsMovableProperty', () => {
-  //       let tabBar = new TabBar<Widget>();
-  //       TabBar.tabsMovableProperty.set(tabBar, true);
-  //       expect(tabBar.tabsMovable).to.be(true);
-  //       tabBar.tabsMovable = false;
-  //       expect(TabBar.tabsMovableProperty.get(tabBar)).to.be(false);
-  //     });
-
-  //   });
 
   //   describe('#headerNode', () => {
 
@@ -426,23 +852,7 @@ describe('phosphor-tabs', () => {
 
   //   });
 
-  //   describe('#bodyNode', () => {
 
-  //     it('should have a `p-TabBar-body` class', () => {
-  //       let tabBar = new TabBar<Widget>();
-  //       expect(tabBar.bodyNode.className).to.be('p-TabBar-body');
-  //     });
-
-  //   });
-
-  //   describe('#contentNode', () => {
-
-  //     it('should have a `p-TabBar-content` class', () => {
-  //       let tabBar = new TabBar<Widget>();
-  //       expect(tabBar.contentNode.className).to.be('p-TabBar-content');
-  //     });
-
-  //   });
 
   //   describe('#footerNode', () => {
 
@@ -478,196 +888,6 @@ describe('phosphor-tabs', () => {
 
   //   });
 
-  //   describe('#onTearOffRequest', () => {
-
-  //     it('should be invoked on a `tearoff-request`', () => {
-  //       let tabBar = createTabBar();
-  //       let widget = tabBar.items.get(0);
-  //       let node = tabBar.contentNode.childNodes[0] as HTMLElement;
-  //       let msg = new TearOffMessage<Widget>(widget, node, 0, 0);
-  //       sendMessage(tabBar, msg);
-  //       expect(tabBar.methods[0]).to.be('onTearOffRequest');
-  //     });
-
-  //     context('`msg` parameter', () => {
-
-  //       it('should have a `type` of `tear-off-request`', () => {
-  //         let tabBar = createTabBar();
-  //         let widget = tabBar.items.get(0);
-  //         let node = tabBar.contentNode.childNodes[0] as HTMLElement;
-  //         let msg = new TearOffMessage<Widget>(widget, node, 0, 0);
-  //         sendMessage(tabBar, msg);
-  //         expect(tabBar.messages[0]).to.be('tear-off-request');
-  //       });
-
-  //       it('should have an `item` property', () => {
-  //         let tabBar = createTabBar();
-  //         let widget = tabBar.items.get(0);
-  //         let node = tabBar.contentNode.childNodes[0] as HTMLElement;
-  //         let msg = new TearOffMessage<Widget>(widget, node, 0, 0);
-  //         expect(msg.item).to.be(widget);
-  //       });
-
-  //       it('should have a `node` property', () => {
-  //         let tabBar = createTabBar();
-  //         let widget = tabBar.items.get(0);
-  //         let node = tabBar.contentNode.childNodes[0] as HTMLElement;
-  //         let msg = new TearOffMessage<Widget>(widget, node, 0, 0);
-  //         expect(msg.node).to.be(node);
-  //       });
-
-  //       it('should have a `clientX` property', () => {
-  //         let tabBar = createTabBar();
-  //         let widget = tabBar.items.get(0);
-  //         let node = tabBar.contentNode.childNodes[0] as HTMLElement;
-  //         let msg = new TearOffMessage<Widget>(widget, node, 0, 0);
-  //         expect(msg.clientX).to.be(0);
-  //       });
-
-  //       it('should have a `clientY` property', () => {
-  //         let tabBar = createTabBar();
-  //         let widget = tabBar.items.get(0);
-  //         let node = tabBar.contentNode.childNodes[0] as HTMLElement;
-  //         let msg = new TearOffMessage<Widget>(widget, node, 0, 0);
-  //         expect(msg.clientY).to.be(0);
-  //       });
-
-  //     });
-
-  //     it('should be called when a tab is detached leftward', () => {
-  //       let tabBar = createTabBar();
-  //       tabBar.tabsMovable = true;
-  //       Widget.attach(tabBar, document.body);
-  //       let tab = tabBar.contentNode.children[1] as HTMLElement;
-  //       let left = tabBar.contentNode.getBoundingClientRect().left;
-  //       let rect = tab.getBoundingClientRect();
-  //       let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
-  //       let opts2 = { clientX: left - 200, clientY: rect.top + 1 };
-  //       triggerMouseEvent(tab, 'mousedown', opts1);
-  //       triggerMouseEvent(tab, 'mousemove', opts2);
-  //       expect(tabBar.methods.indexOf('onTearOffRequest')).to.not.be(-1);
-  //       triggerMouseEvent(tab, 'mouseup', opts2);
-  //       tabBar.dispose();
-  //     });
-
-  //     it('should be called when a tab is torn off downward', () => {
-  //       let tabBar = createTabBar();
-  //       tabBar.tabsMovable = true;
-  //       Widget.attach(tabBar, document.body);
-  //       let tab = tabBar.contentNode.children[0] as HTMLElement;
-  //       let top = tabBar.contentNode.getBoundingClientRect().top;
-  //       let rect = tab.getBoundingClientRect();
-  //       let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
-  //       let opts2 = { clientX: rect.left + 1, clientY: top - 200 };
-  //       triggerMouseEvent(tab, 'mousedown', opts1);
-  //       triggerMouseEvent(tab, 'mousemove', opts2);
-  //       expect(tabBar.methods.indexOf('onTearOffRequest')).to.not.be(-1);
-  //       tabBar.dispose();
-  //     });
-
-  //     it('should be called when a tab is torn off upward', () => {
-  //       let tabBar = createTabBar();
-  //       tabBar.tabsMovable = true;
-  //       Widget.attach(tabBar, document.body);
-  //       let tab = tabBar.contentNode.children[0] as HTMLElement;
-  //       let bottom = tabBar.contentNode.getBoundingClientRect().bottom;
-  //       let rect = tab.getBoundingClientRect();
-  //       let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
-  //       let opts2 = { clientX: rect.left + 1, clientY: bottom + 200 };
-  //       triggerMouseEvent(tab, 'mousedown', opts1);
-  //       triggerMouseEvent(tab, 'mousemove', opts2);
-  //       expect(tabBar.methods.indexOf('onTearOffRequest')).to.not.be(-1);
-  //       tabBar.dispose();
-  //     });
-
-  //     it('should be called when a tab is torn off rightward', () => {
-  //       let tabBar = createTabBar();
-  //       tabBar.tabsMovable = true;
-  //       Widget.attach(tabBar, document.body);
-  //       let tab = tabBar.contentNode.children[0] as HTMLElement;
-  //       let right = tabBar.contentNode.getBoundingClientRect().right;
-  //       let rect = tab.getBoundingClientRect();
-  //       let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
-  //       let opts2 = { clientX: right + 200, clientY: rect.top + 1 };
-  //       triggerMouseEvent(tab, 'mousedown', opts1);
-  //       triggerMouseEvent(tab, 'mousemove', opts2);
-  //       expect(tabBar.methods.indexOf('onTearOffRequest')).to.not.be(-1);
-  //       tabBar.dispose();
-  //     });
-
-  //     it('should not be called when a tab is not moved far enough', () => {
-  //       let tabBar = createTabBar();
-  //       tabBar.tabsMovable = true;
-  //       Widget.attach(tabBar, document.body);
-  //       let tab = tabBar.contentNode.children[0] as HTMLElement;
-  //       let rect = tab.getBoundingClientRect();
-  //       let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
-  //       let opts2 = { clientX: rect.left, clientY: rect.top + 1 };
-  //       triggerMouseEvent(tab, 'mousedown', opts1);
-  //       // next event should be ignored
-  //       triggerMouseEvent(tab, 'mousedown', opts2);
-  //       triggerMouseEvent(tab, 'mousemove', opts2);
-  //       expect(tabBar.methods.indexOf('onTearOffRequest')).to.be(-1);
-  //       triggerMouseEvent(tab, 'mouseup', opts2);
-  //       tabBar.dispose();
-  //     });
-
-  //     it('should not be called when the left button is not used', () => {
-  //       let tabBar = createTabBar();
-  //       tabBar.tabsMovable = true;
-  //       Widget.attach(tabBar, document.body);
-  //       let tab = tabBar.contentNode.children[0] as HTMLElement;
-  //       let rect = tab.getBoundingClientRect();
-  //       let opts1 = {
-  //         clientX: rect.left + 1,
-  //         clientY: rect.top + 1,
-  //         button: 1
-  //       };
-  //       let opts2 = {
-  //         clientX: -200,
-  //         clientY: rect.top + 1,
-  //         button: 1
-  //       };
-  //       triggerMouseEvent(tab, 'mousedown', opts1);
-  //       triggerMouseEvent(tab, 'mousemove', opts2);
-  //       expect(tabBar.methods.indexOf('onTearOffRequest')).to.be(-1);
-  //       triggerMouseEvent(tab, 'mouseup', opts2);
-  //       tabBar.dispose();
-  //     });
-
-  //     it('should not be called when tab is not selected', () => {
-  //       let tabBar = createTabBar();
-  //       tabBar.tabsMovable = true;
-  //       Widget.attach(tabBar, document.body);
-  //       let tab = tabBar.contentNode.children[0] as HTMLElement;
-  //       let rect = tab.getBoundingClientRect();
-  //       let opts1 = { clientX: -10 };
-  //       let opts2 = { clientX: -200, clientY: rect.bottom };
-  //       triggerMouseEvent(tab, 'mousedown', opts1);
-  //       triggerMouseEvent(tab, 'mousemove', opts2);
-  //       expect(tabBar.methods.indexOf('onTearOffRequest')).to.be(-1);
-  //       triggerMouseEvent(tab, 'mouseup', opts2);
-  //       tabBar.dispose();
-  //     });
-
-  //     it('should not be called when a close node is selected', () => {
-  //       let tabBar = createTabBar();
-  //       tabBar.tabsMovable = true;
-  //       Widget.attach(tabBar, document.body);
-  //       let nodes = tabBar.node.querySelectorAll('.p-Tab-close');
-  //       let node = nodes[0] as HTMLElement;
-  //       node.textContent = "X";
-  //       let rect = node.getBoundingClientRect();
-  //       let opts1 = { clientX: rect.left + 1, clientY: rect.top + 1 };
-  //       let opts2 = { clientX: -200, clientY: rect.top + 1 };
-  //       triggerMouseEvent(node, 'mousedown', opts1);
-  //       triggerMouseEvent(node, 'mousemove', opts2);
-  //       expect(tabBar.methods.indexOf('onTearOffRequest')).to.be(-1);
-  //       triggerMouseEvent(node, 'mouseup', opts2);
-  //       tabBar.dispose();
-  //     });
-
-  //   });
 
   //   describe('#onAfterAttach()', () => {
 
@@ -782,5 +1002,3 @@ describe('phosphor-tabs', () => {
   //   });
 
   // });
-
-});
