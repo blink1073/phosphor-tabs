@@ -133,10 +133,10 @@ describe('phosphor-tabs', () => {
 
       it('should create a DOM node for a tabbar', () => {
         let node = TabBar.createNode();
-        let body = node.children[0] as HTMLElement;
-        expect(body.classList.contains('p-TabBar-body')).to.be(true);
-        let content = body.children[0];
-        expect(content.classList.contains('p-TabBar-content')).to.be(true);
+        expect(node.getElementsByClassName('p-TabBar-header').length).to.be(1);
+        expect(node.getElementsByClassName('p-TabBar-body').length).to.be(1);
+        expect(node.getElementsByClassName('p-TabBar-content').length).to.be(1);
+        expect(node.getElementsByClassName('p-TabBar-footer').length).to.be(1);
       });
 
     });
@@ -146,7 +146,8 @@ describe('phosphor-tabs', () => {
       it('should create and initialize a tabe node for a tab bar', () => {
         let title = new Title();
         title.text = 'foo';
-        let tab = TabBar.createTab(title);
+        let tab = TabBar.createTab();
+        TabBar.updateTab(tab, title);
         expect(tab.classList.contains('p-TabBar-tab')).to.be(true);
         // Make sure we can retrieve these items.
         let text = getTextNode(tab);
@@ -161,7 +162,8 @@ describe('phosphor-tabs', () => {
 
       it('should update a tab node to reflect the current state of a title', ()  => {
         let title = new Title();
-        let tab = TabBar.createTab(title);
+        let tab = TabBar.createTab();
+        TabBar.updateTab(tab, title);
         let icon = getIconNode(tab);
         let text = getTextNode(tab)
         expect(tab.classList.contains('p-mod-closable')).to.be(false);
@@ -182,7 +184,7 @@ describe('phosphor-tabs', () => {
     describe('.tabCloseIcon()', () => {
 
       it('should get the close icon node for a given tab node', () => {
-        let tab = TabBar.createTab(new Title());
+        let tab = TabBar.createTab();
         let closeIcon = TabBar.tabCloseIcon(tab);
         expect(closeIcon.classList.contains('p-TabBar-tabCloseIcon')).to.be(true);
       });

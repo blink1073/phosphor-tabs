@@ -13,9 +13,7 @@ import {
 
 import {
   TabPanel
-} from '../lib/index';
-
-import './index.css';
+} from '../../lib/index';
 
 
 function createContent(title: string): Widget {
