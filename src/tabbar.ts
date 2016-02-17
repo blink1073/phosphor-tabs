@@ -649,7 +649,7 @@ class TabBar extends Widget {
 
     // Emit the tab clicked signal.
     let item = this._items[i];
-    this.clicked.emit({ index: i, item});
+    this.clicked.emit({ index: i, item });
 
     // Bail if the title is not closable.
     if (!item.title.closable) {
