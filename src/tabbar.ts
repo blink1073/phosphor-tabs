@@ -292,6 +292,13 @@ class TabBar extends Widget {
   }
 
   /**
+   * A signal emitted when a tab is clicked.
+   */
+  get clicked(): ISignal<TabBar, ITabIndexArgs> {
+    return TabBarPrivate.clickedSignal.bind(this);
+  }
+
+  /**
    * A signal emitted when a tab is moved by the user.
    */
   get tabMoved(): ISignal<TabBar, ITabMovedArgs> {
@@ -640,13 +647,16 @@ class TabBar extends Widget {
     event.preventDefault();
     event.stopPropagation();
 
-    // Ignore the click if the title is not closable.
+    // Emit the tab clicked signal.
     let item = this._items[i];
+    this.clicked.emit({ index: i, item});
+
+    // Bail if the title is not closable.
     if (!item.title.closable) {
       return;
     }
 
-    // Ignore the click if it was not on a close icon.
+    // Bail if it was not on a close icon.
     let constructor = this.constructor as typeof TabBar;
     let icon = constructor.tabCloseIcon(this._tabs[i]);
     if (!icon.contains(event.target as HTMLElement)) {
@@ -896,6 +906,12 @@ namespace TabBarPrivate {
    */
   export
   const currentChangedSignal = new Signal<TabBar, ITabIndexArgs>();
+
+  /**
+   * A signal emitted when a tab item is clicked.
+   */
+  export
+  const clickedSignal = new Signal<TabBar, ITabIndexArgs>();
 
   /**
    * A signal emitted when a tab is moved by the user.

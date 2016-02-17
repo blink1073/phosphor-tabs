@@ -12,6 +12,10 @@ import {
 } from 'phosphor-boxpanel';
 
 import {
+  sendMessage, Message
+} from 'phosphor-messaging';
+
+import {
   StackedPanel
 } from 'phosphor-stackedpanel';
 
@@ -38,6 +42,11 @@ const TAB_BAR_CLASS = 'p-TabPanel-tabBar';
  * The class name added to a TabPanel's stacked panel.
  */
 const STACKED_PANEL_CLASS = 'p-TabPanel-stackedPanel';
+
+/*
+ * A singleton `'focus-request'` message.
+ */
+const MsgFocusRequest = new Message('focus-request');
 
 
 /**
@@ -94,6 +103,7 @@ class TabPanel extends Widget {
 
     this._tabBar.tabMoved.connect(this._onTabMoved, this);
     this._tabBar.currentChanged.connect(this._onCurrentChanged, this);
+    this._tabBar.clicked.connect(this._onClicked, this);
     this._tabBar.tabCloseRequested.connect(this._onTabCloseRequested, this);
     this._stackedPanel.widgetRemoved.connect(this._onWidgetRemoved, this);
 
@@ -249,7 +259,18 @@ class TabPanel extends Widget {
     if (oldWidget === newWidget) return;
     this._currentWidget = newWidget;
     if (oldWidget) oldWidget.hide();
-    if (newWidget) newWidget.show();
+    if (newWidget) {
+      newWidget.show();
+      sendMessage(newWidget, MsgFocusRequest);
+    }
+  }
+
+  /**
+   * Handle the `clicked` signal from the tab bar.
+   */
+  private _onClicked(sender: TabBar, args: ITabIndexArgs): void {
+    let widget = args.item as Widget;
+    sendMessage(widget, MsgFocusRequest);
   }
 
   /**
